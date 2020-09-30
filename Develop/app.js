@@ -4,32 +4,176 @@ const Intern = require("./lib/Intern");
 const inquirer = require("inquirer");
 const path = require("path");
 const fs = require("fs");
+const util = require("util");
 
 const OUTPUT_DIR = path.resolve(__dirname, "output");
 const outputPath = path.join(OUTPUT_DIR, "team.html");
 
 const render = require("./lib/htmlRenderer");
+const writeFile = util.promisify(fs.writeFile);
 
+let members = [];
 
-// Write code to use inquirer to gather information about the development team members,
-// and to create objects for each team member (using the correct classes as blueprints!)
+const roleQuests = [
+    {
+        type: "list",
+        message: "What is your role in the team?",
+        name: "teamRole",
+        choices: ["Engineer", "Intern", "Manager"],
+      },
+];
 
-// After the user has input all employees desired, call the `render` function (required
-// above) and pass in an array containing all employee objects; the `render` function will
-// generate and return a block of HTML including templated divs for each employee!
+const managerQuests = [
+    {
+      type: "input",
+      message: "Could you please enter your first and last name",
+      name: "name",
+    },
+    {
+      type: "input",
+      message: "Could you please provide your employee id number?",
+      name: "idNumber",
+    },
+    {
+      type: "input",
+      message: "What is your employee email address?",
+      name: "email",
+    },
+    {
+      type: "input",
+      message: "What is your office number where you are located at?",
+      name: "officeNumber",
+    },
+  ];
 
-// After you have your html, you're now ready to create an HTML file using the HTML
-// returned from the `render` function. Now write it to a file named `team.html` in the
-// `output` folder. You can use the variable `outputPath` above target this location.
-// Hint: you may need to check if the `output` folder exists and create it if it
-// does not.
+const engineerQuests = [
+    {
+      type: "input",
+      message: "Could you please enter your first and last name",
+      name: "name",
+    },
+    {
+      type: "input",
+      message: "Could you please provide your employee id number?",
+      name: "idNumber",
+    },
+    {
+      type: "input",
+      message: "What is your employee email address?",
+      name: "email",
+    },
+    {
+      type: "input",
+      message: "Could you give us your Github account username?",
+      name: "github",
+    },
+];
+  
+const internQuests = [
+    {
+      type: "input",
+      message: "Could you please enter your first and last name",
+      name: "name",
+    },
+    {
+      type: "input",
+      message: "Could you please provide your employee id number?",
+      name: "idNumber",
+    },
+    {
+      type: "input",
+      message: "What is your employee email address?",
+      name: "email",
+    },
+    {
+      type: "input",
+      message: "Could you provide the university you are enrolled in currently?",
+      name: "school",
+    },
+  ];
 
-// HINT: each employee type (manager, engineer, or intern) has slightly different
-// information; write your code to ask different questions via inquirer depending on
-// employee type.
+const generateQuests = [
+    {
+        type: "list",
+        message: "Will you be adding a new member or generating the team?",
+        name: "generate",
+        choices: ["Add New Member", "Generate Team"],
+      },
+];
 
-// HINT: make sure to build out your classes first! Remember that your Manager, Engineer,
-// and Intern classes should all extend from a class named Employee; see the directions
-// for further information. Be sure to test out each class and verify it generates an
-// object with the correct structure and methods. This structure will be crucial in order
-// for the provided `render` function to work! ```
+function init(){
+    console.log("Hey there, in order to build a concise team layout please answer the following questions.");
+    configureMem();
+}
+
+function configureMem(){
+    inquirer.prompt(roleQuests).then(({ teamRole }) => {
+        if (teamRole === "Engineer") {
+            inquirer.prompt(engineerQuests).then((answers) => {
+                engineer = new Engineer(
+                                answers.name,
+                                answers.idNumber,
+                                answers.email,
+                                answers.github,
+                                answers.teamRole
+
+                            );
+                members.push(engineer);
+                console.log(engineer);
+                generateAgain();
+            });
+        }else if(teamRole === "Intern"){
+            inquirer.prompt(internQuests).then((answers) => {
+                intern = new Intern(
+                                answers.name,
+                                answers.idNumber,
+                                answers.email,
+                                answers.school,
+                                answers.teamRole
+                            );
+                members.push(intern);
+                console.log(intern);
+                generateAgain();
+            });
+        }else if(teamRole === "Manager"){
+            inquirer.prompt(managerQuests).then((answers) => {
+                manager = new Manager(
+                                answers.name,
+                                answers.idNumber,
+                                answers.email,
+                                answers.officeNumber,
+                                answers.teamRole
+
+                            );
+                members.push(manager);
+                console.log(manager);
+                generateAgain();
+            });
+        }
+    });
+}
+
+function generateAgain(){
+    inquirer.prompt(generateQuests).then(({ generate }) => {
+        if (generate === "Add New Member"){
+            configureMem();
+        }else{
+            createFile();
+        }
+    });
+}
+
+function createFile(){
+    if (!fs.existsSync(OUTPUT_DIR)) {//checking if it exist else creating it 
+        fs.mkdirSync(OUTPUT_DIR);
+    }
+    try {
+        const readerMember = render(members);
+        writeFile(outputPath, readerMember);
+        console.log("Successfully wrote to team file check output folder");
+    } catch(err) {
+        console.log(err);
+    }
+}
+
+init();
